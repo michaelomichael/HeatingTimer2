@@ -1,0 +1,31 @@
+Tests for heating timer
+
+Section 1a - offline timings
+
+Make sure it rolls over to the next weekday:
+    Set up timings for Tuesday:  00:00 to 00:10,  00:20 to 00:30, 00:40 to 00:50
+    Programatically set the time to be 23:59 on Monday
+    Wait a minute and make sure that it sets the day to Tuesday and time rolls over
+    Make sure that the relays go on for 10 mins, etc.
+    Repeat for all 7 days
+    
+Make sure it cancels relays at midnight:
+    Set up timings for Monday:  00:00 to 00:10,  00:20 to 00:30, 23:50 to 24:00
+    Set up timings for Tuesday:  00:00 to 00:00,  00:10 to 00:20, etc.
+    Programatically set the time to be 23:49 on Monday
+    Make sure the relays go on at 23:50, then off at midnight, then on again etc.    
+    Repeat for all 7 days    
+    
+
+
+When it's off, click the +1 and make sure that it goes on for one hour only
+
+When it's on, click the +1 and make sure that it goes off for one hour only
+
+When it's off, click the ADV and make sure that it goes on until the end of the next period
+
+When it's on, click the ADV and make sure that it goes off until the start of the next period
+
+When it's on, click the ADV twice, and make sure that it stays on until the end of the current period
+
+When it's off, click the ADV twice, and make sure that it 
