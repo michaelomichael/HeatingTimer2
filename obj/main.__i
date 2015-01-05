@@ -1,5 +1,0 @@
---cpp -c --cpu Cortex-M0 -D__EVAL -D__MICROLIB -g -O2 --apcs=interwork --split_sections -I.\sys -I.\inc -I.\project_files -I..\orzlib
--I C:\Keil\ARM\RV31\INC
--I C:\Keil\ARM\CMSIS\Include
--I C:\Keil\ARM\Inc\ST\STM32F0xx
--DUSE_STDPERIPH_DRIVER -DSTM32F0XX -DUSE_DEFAULT_TIMEOUT_CALLBACK -o .\obj\main.o --omf_browse .\obj\main.crf --depend .\obj\main.d "project_files\main.cpp"
