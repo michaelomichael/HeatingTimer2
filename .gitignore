@@ -1,4 +1,12 @@
+HeatingTimer.uvgui.bak
+HeatingTimer.uvgui.dep
+HeatingTimer.uvgui.uvgui.Michael
+HeatingTimer.uvgui.uvgui_Michael.bak
+HeatingTimer.uvgui.uvopt
+HeatingTimer.uvgui_STM32F0-Discovery.dep
+Test3 (deleteme).map
 project_files/WifiDetails.h
+obj/
 obj/delay.crf
 obj/delay.d
 obj/delay.o
@@ -116,3 +124,9 @@ obj/Test3 (deleteme).plg
 obj/thermometer.crf
 obj/thermometer.d
 obj/thermometer.o
+
+
+
+
+
+

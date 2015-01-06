@@ -62,6 +62,7 @@ void Thermometer::init(int iPin_p)
 //
 bool Thermometer::takeSample()
 {       
+    
     int iSampleVoltage = analogRead(iPin_i);
     int iSampleDegrees = convertVoltageToTemperature(iSampleVoltage);
     
@@ -84,7 +85,7 @@ bool Thermometer::takeSample()
     
     for (int i=0; i < iNumSamplesTaken_i; i++)
     {   
-        iTotalDegrees = viSamples_i[i];
+        iTotalDegrees += viSamples_i[i];
     }
     
     int iNewAverage = iTotalDegrees / iNumSamplesTaken_i;

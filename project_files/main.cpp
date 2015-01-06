@@ -1,3 +1,5 @@
+
+
 /*
 Follows
 an example here: http://www.embedds.com/stm32-interrupts-and-programming-with-gcc/
@@ -19,6 +21,7 @@ an example here: http://www.embedds.com/stm32-interrupts-and-programming-with-gc
 // #include "HeatingWifly.h"
 #include "HeatingESP8266.h"
 #include "RTC.h"
+#include "Thermometer.h"
 
 //#define debug(x) ;
 
@@ -144,8 +147,7 @@ const int MAX_HTTP_BODY_CHARS_TO_READ = 73;
 // We take periodic temperature readings, and average them
 // out to get a less 'jumpy' reading.
 //
-const unsigned long TEMPERATURE_SAMPLE_DELAY_MILLIS = 5000;//60000;
-const byte MAX_TEMPERATURE_SAMPLES = 3;
+const unsigned long TEMPERATURE_SAMPLE_DELAY_MILLIS = 5000;//60000;// FORLATER:
 
 //
 // When the wifly module doesn't respond, we have the option of doing a soft reset
@@ -182,6 +184,8 @@ PROGMEM prog_char MSG_WIFLY_STARTUP_MESSAGE[] = "STARTUP";
 
 RealTimeClock rtc_m;
 HeatingESP8266 wifly_m;
+Thermometer thermometer_m;
+
 #define debugSerial_m Serial
 #define wiflySerial_m Serial1
 int iState_m = PARSE_STATE_IDLE;
@@ -193,7 +197,7 @@ char vsBase64SendBuffer_m[MAX_BASE64_SEND_BUFFER_SIZE];
 
 
 
-int temperatureSamples_m[MAX_TEMPERATURE_SAMPLES] = { 0, 0, 0};
+//int temperatureSamples_m[MAX_TEMPERATURE_SAMPLES] = { 0, 0, 0};
 unsigned long lLastTimeCheckTime_m = 0;
 
 
@@ -296,7 +300,7 @@ int base64Encode(char* psOriginal_p, char* psOutput_p, int iMaxOutputChars_p)
     return iOutputCharsProcessed;   
 }
 
-/*
+#if UNIT_TEST
 
 void testBase64Encoding(char* psTestName_p, char* psAscii_p, char* psExpectedBase64_p)
 {
@@ -323,28 +327,10 @@ void testBase64Encoding(char* psTestName_p, char* psAscii_p, char* psExpectedBas
     }
 }
 
-*/
+#endif
 
                     
-                    
-/*
-unsigned long millisSince(unsigned long lLastMillis_p)
-{
-    unsigned long lCurrentMillis = millis();
-    
-    if (lCurrentMillis < lLastMillis_p)
-    {
-        // Assume rollover
-        return lCurrentMillis + (0xFFFFFFFFUL - lLastMillis_p);
-    }
-    else
-    {
-        return lCurrentMillis - lLastMillis_p;   
-    }   
-}                    
-*/
-
-
+      
 
 bool isWithinWindow(char cStart_p, char cEnd_p)
 {
@@ -490,6 +476,9 @@ void updateRelays()
         isEnergised = false;
     }
     
+    debugSerial_m.print("IsEnergised=");
+    debugSerial_m.println(isEnergised ? "Y" : "N");
+    
     if (isAdvanceStatusChanged)
     {
         // FORLATER: updateDisplay(&heatingInfo_m, false);
@@ -524,56 +513,29 @@ void updateHeatingInfoWithRTC(HeatingInfo *pHeatingInfo_p)
 
 bool sampleTemperature()
 {
-    // Returns a value between 0 and 4094 (i.e. 0xFFF)
-    uint16_t iTemperatureSample = analogRead(TEMPERATURE_SENSOR_PIN); // analogRead(5);
+    bool isTemperatureChanged = thermometer_m.takeSample();    
+    int iTemperatureDegrees = thermometer_m.getAverageInDegrees();
     
-    // The formula below was for arduino, which returns ADC value between 0 and 1024
-    double dTemperatureSample = (iTemperatureSample / 4094.0) * 1024.0;
-    double dTemp;
-    dTemp = logf(((10240000/dTemperatureSample) - 10000));
-    dTemp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * dTemp * dTemp ))* dTemp );
-    dTemp = dTemp - 273.15;            // Convert Kelvin to Celcius
-    
-    int iTemperatureCentigrade = dTemp;
-    //iTemperatureCentigrade = -5;
-    debugSerial_m.print("Temp sample:");
-    debugSerial_m.print(iTemperatureSample, DEC);
-    debugSerial_m.print(" = ");
-    debugSerial_m.println(iTemperatureCentigrade, DEC);
-    
-    for (byte i=0; i < MAX_TEMPERATURE_SAMPLES-1; i++)
-    {
-        if (0 == lLastTemperatureSampleTime_m)
-        {
-            temperatureSamples_m[i] = iTemperatureCentigrade;  // First time, just fill with the current value
-        }
-        else
-        {
-            temperatureSamples_m[i] = temperatureSamples_m[i+1];  // Roll back towards index [0]
-        }             
-    }
-    
-    temperatureSamples_m[MAX_TEMPERATURE_SAMPLES-1] = iTemperatureCentigrade; 
-
-    int iAverageTemperatureReading = 0;
-        
-    for (byte i=0; i < MAX_TEMPERATURE_SAMPLES; i++)
-    {
-        iAverageTemperatureReading += temperatureSamples_m[i];    
-    }
-    
-    iAverageTemperatureReading /= MAX_TEMPERATURE_SAMPLES;
-            
-    bool isTemperatureChanged = (iAverageTemperatureReading != heatingInfo_m.ambientTemp);        
-    heatingInfo_m.ambientTemp = iAverageTemperatureReading;
+    heatingInfo_m.ambientTemp = iTemperatureDegrees;
     heatingInfo_m.isAmbientTempSet = true;
     lLastTemperatureSampleTime_m = millis();
     
     debugSerial_m.print("Storing new ambient temp as ");
     debugSerial_m.println(heatingInfo_m.ambientTemp, DEC);
-    
-    return isTemperatureChanged;
+        
+    return isTemperatureChanged;        
 }
+
+
+
+
+#if UNIT_TEST
+void runAllUnitTests()
+{
+    thermometer_m.runTests(&debugSerial_m);
+}
+
+#endif 
 
 
 
@@ -584,12 +546,17 @@ void setup()
     debugSerial_m.println();
     debugSerial_m.println(vsProgmemBuffer_m); 
 
+#if UNIT_TEST
+    runAllUnitTests();
+#endif
+    
     wiflySerial_m.begin(9600);
     
     setPinMode(PC8, PIN_MODE_DIGITAL_WRITE);  // Set these as some of our library code 
     setPinMode(PC9, PIN_MODE_DIGITAL_WRITE);  // occasionally likes to flash them
-
-    setPinMode(TEMPERATURE_SENSOR_PIN, PIN_MODE_ANALOG_READ);
+    
+    thermometer_m.init(TEMPERATURE_SENSOR_PIN);
+        
     // FORLATER: setPinMode(ADVANCE_BUTTON_PIN, PIN_MODE_DIGITAL_READ);
     // FORLATER: setPinMode(ENCODER_BUTTON_PIN, PIN_MODE_DIGITAL_READ);
     //pinMode(BACK_BUTTON_PIN, INPUT);    
@@ -661,17 +628,17 @@ void setup()
     // FORLATER: updateDisplay(&heatingInfo_m, false);    
         
     wifly_m.begin(&wiflySerial_m, &debugSerial_m);    
+
     synchroniseWithInternet(true);
 
-    debug("Setup complete.");
+    debug("Setup complete.");       
 }
 
 
 
 
 void loop()                     
-{
-     
+{    
     // FORLATER: if ((! isUIBusy())   &&  millisSince(lLastTimeCheckTime_m) > RTC_UPDATE_TIME_MILLIS)
     if (millisSince(lLastTimeCheckTime_m) > RTC_UPDATE_TIME_MILLIS)
     {
@@ -736,7 +703,6 @@ void loop()
             synchroniseWithInternet(false);                
         }
     }    
-
 }
 
 
@@ -868,8 +834,8 @@ void parseHeatingInfo(char *psHttpBody_p)
     int iGPIOStatuses = (*psOriginal) - '0';
     
     newHeatingInfo.gpioStatuses[0] = (iGPIOStatuses & 0x1) > 0;
-    newHeatingInfo.gpioStatuses[1] = (iGPIOStatuses & 0x2) > 0;
-    //newHeatingInfo.gpioStatuses[2] = (iGPIOStatuses & 0x4) > 0;    
+    // FORLATER: newHeatingInfo.gpioStatuses[1] = (iGPIOStatuses & 0x2) > 0;
+    // FORLATER: newHeatingInfo.gpioStatuses[2] = (iGPIOStatuses & 0x4) > 0;    
     
     psOriginal++;
     
@@ -1158,7 +1124,7 @@ int main(void)
 
 #define DEBUG_ENABLED 1
 
-void debug(char* psMessage_p)
+void debug(const char* psMessage_p)
 {
     if(DEBUG_ENABLED)
     {
@@ -1168,3 +1134,4 @@ void debug(char* psMessage_p)
         debugSerial_m.flush();
     }
 }
+

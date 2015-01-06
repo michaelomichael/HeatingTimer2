@@ -4,7 +4,7 @@
 #include "stm32f0xx.h"
 #include "orz.h"
 
-
+#define UNIT_TEST TRUE
 
 const int CR = 13;
 const int LF = 10;
@@ -45,6 +45,7 @@ const int ADVANCED_TO_NEXT_EVENT = 2;
 struct HeatingInfo
 {
     byte currentDay;  // 0 == Sun, 6 == Sat
+    bool isRelayExcited;
     int ambientTemp;
     bool isAmbientTempSet;
     byte maxTemp; 
@@ -78,5 +79,5 @@ void setLcdBrightness(int iValue_p);
 void notifyHeatingInfoChangedLocally();
 
 
-void debug(char* psMessage_p);
+void debug(const char* psMessage_p);
 #endif
