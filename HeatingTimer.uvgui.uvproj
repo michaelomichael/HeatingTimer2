@@ -725,6 +725,26 @@
               <FileType>5</FileType>
               <FilePath>.\project_files\WifiDetails.h</FilePath>
             </File>
+            <File>
+              <FileName>Thermometer.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\project_files\Thermometer.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>Thermometer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\project_files\Thermometer.h</FilePath>
+            </File>
+            <File>
+              <FileName>BoilerController.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\project_files\BoilerController.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>BoilerController.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\project_files\BoilerController.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

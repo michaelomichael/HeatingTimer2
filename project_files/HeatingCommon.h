@@ -20,7 +20,7 @@ const int NUM_GPIO_PINS = 1;
 const int DAYS_IN_A_WEEK = 7;
 const int WINDOWS_PER_DAY = 3;
 const int MINUTES_IN_A_DAY = 1440;
-const unsigned long MILLIS_IN_AN_HOUR = 30000UL;// was 3600000UL;  
+const unsigned long MILLIS_IN_AN_HOUR = 3600000UL;  
 
 
 const int MAX_DAY_NAME_LENGTH = 3;

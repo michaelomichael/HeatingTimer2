@@ -22,6 +22,7 @@ an example here: http://www.embedds.com/stm32-interrupts-and-programming-with-gc
 #include "HeatingESP8266.h"
 #include "RTC.h"
 #include "Thermometer.h"
+#include "BoilerController.h"
 
 //#define debug(x) ;
 
@@ -185,6 +186,7 @@ PROGMEM prog_char MSG_WIFLY_STARTUP_MESSAGE[] = "STARTUP";
 RealTimeClock rtc_m;
 HeatingESP8266 wifly_m;
 Thermometer thermometer_m;
+BoilerController boiler_m;
 
 #define debugSerial_m Serial
 #define wiflySerial_m Serial1
@@ -209,7 +211,7 @@ const unsigned long DEFAULT_INTERNET_SYNC_DELAY_MILLIS = 10000; // 2 mins
 
 HeatingInfo heatingInfo_m;
 bool isHeatingInfoChangedLocally_m = false;
-bool isEnergised = false;
+bool isEnergised_m = false;
 unsigned long lLastSynchroniseSendTime_m = 0;
 unsigned long lLastSynchroniseSuccessTime_m = 0;
 unsigned long lLastTemperatureSampleTime_m = 0;
@@ -332,6 +334,8 @@ void testBase64Encoding(char* psTestName_p, char* psAscii_p, char* psExpectedBas
                     
       
 
+/*
+Moved to BoilerController.c
 bool isWithinWindow(char cStart_p, char cEnd_p)
 {
     char cCurrentTime = (heatingInfo_m.currentTimeHours * 10) + (heatingInfo_m.currentTimeMins / 10);
@@ -339,8 +343,7 @@ bool isWithinWindow(char cStart_p, char cEnd_p)
     return cCurrentTime >= cStart_p  &&  cCurrentTime < cEnd_p;
 }
 
-
-void updateRelays()
+void updateRelaysOld()
 {    
     // Flash LEDs to show we mean business
     debug("Updating relays");
@@ -372,31 +375,31 @@ void updateRelays()
         }
     }
     
-    /*
-        Previous state      New state       Advance state  Reset Advance?   Action
-        -------------       ---------       -------------  --------------   ------
-        Not in window       Not in window   None                            Relays off
-        Not in window       Not in window   +1 hour        If > 1hr         If within 1 hour of when you clicked the button then Relays on, else set advance to 'none'
-        Not in window       Not in window   Advance                         Relays on
-        Not in window       In window       None                            Relays on
-        Not in window       In window       +1 hour        Yes              Relays on, and set advance to 'none'
-        Not in window       In window       Advance        Yes              Relays on, and set advance to 'none'
-        In window           Not in window   None                            Relays off
-        In window           Not in window   +1 hour        Yes              Relays off, and set advance to 'none'
-        In window           Not in window   Advance        Yes              Relays off, and set advance to 'none'
-        In window           In window       None                            Relays on
-        In window           In window       +1 hour        If > 1hr         If within 1 hour of when you clicked the button then Relays off, else set advance to 'none'
-        In window           In window       Advance                         Relays off
-        
-    Once we've sorted out all of the resetting of 'advance' status, it boils down to:
-        New state       Advance state   Relays
-        ---------       -------------   ------
-        Not in window   None            Off
-        Not in window   +1/Advance      On
-        In window       None            On
-        In window       +1/Advance      Off
-        
-    */
+    //
+    //    Previous state      New state       Advance state  Reset Advance?   Action
+    //    -------------       ---------       -------------  --------------   ------
+    //    Not in window       Not in window   None                            Relays off
+    //    Not in window       Not in window   +1 hour        If > 1hr         If within 1 hour of when you clicked the button then Relays on, else set advance to 'none'
+    //    Not in window       Not in window   Advance                         Relays on
+    //    Not in window       In window       None                            Relays on
+    //    Not in window       In window       +1 hour        Yes              Relays on, and set advance to 'none'
+    //    Not in window       In window       Advance        Yes              Relays on, and set advance to 'none'
+    //    In window           Not in window   None                            Relays off
+    //    In window           Not in window   +1 hour        Yes              Relays off, and set advance to 'none'
+    //    In window           Not in window   Advance        Yes              Relays off, and set advance to 'none'
+    //    In window           In window       None                            Relays on
+    //    In window           In window       +1 hour        If > 1hr         If within 1 hour of when you clicked the button then Relays off, else set advance to 'none'
+    //    In window           In window       Advance                         Relays off
+    //    
+    //Once we've sorted out all of the resetting of 'advance' status, it boils down to:
+    //    New state       Advance state   Relays
+    //    ---------       -------------   ------
+    //    Not in window   None            Off
+    //    Not in window   +1/Advance      On
+    //    In window       None            On
+    //    In window       +1/Advance      Off
+    //    
+    //
     // Reset the advance status if we've crossed a window boundary
     bool isAdvanceStatusChanged = false;
     
@@ -485,6 +488,40 @@ void updateRelays()
     }
 }
 
+*/
+
+
+
+void updateRelays()
+{    
+    // Flash LEDs to show we mean business
+    for (int i=0; i < 3; i++)
+    {
+        digitalWrite(ACTIVE_INDICATOR_PIN, HIGH);
+        delay(50);
+        digitalWrite(ACTIVE_INDICATOR_PIN, LOW);
+        delay(50);
+    }    
+        
+    for (byte yGPIO = 0; yGPIO < NUM_GPIO_PINS; yGPIO++)
+    {
+        digitalWrite(GPIO_PINS[yGPIO], heatingInfo_m.gpioStatuses[yGPIO] ? HIGH : LOW);
+    }
+    
+    bool isAdvanceStatusChanged = boiler_m.updateRelays(&heatingInfo_m);
+    isEnergised_m = boiler_m.isEnergised();
+    
+    digitalWrite(HEATING_RELAY_PIN, boiler_m.isHeatingRelayClosed() ? HIGH : LOW);
+    digitalWrite(WATER_RELAY_PIN, boiler_m.isWaterRelayClosed() ? HIGH : LOW);           
+    digitalWrite(ACTIVE_INDICATOR_PIN, isEnergised_m ? HIGH : LOW);
+    
+    if (isAdvanceStatusChanged)
+    {
+        isHeatingInfoChangedLocally_m = true; // Notify the web server so it doesn't revert back to what's in the DB.            
+        // FORLATER: updateDisplay(&heatingInfo_m, false);
+    }
+}
+
 
 
 
@@ -504,9 +541,26 @@ void updateRTCWithHeatingInfo(HeatingInfo *pHeatingInfo_p)
 void updateHeatingInfoWithRTC(HeatingInfo *pHeatingInfo_p)
 {
     debug("Updating heating info with RTC data");
-    pHeatingInfo_p->currentDay = rtc_m.getWeekday() % 7;  // Convert Sun=7,Mon=1,Sat=6 to Sun=0,Mon=1,Sat=6
-    pHeatingInfo_p->currentTimeHours = rtc_m.getHour();
-    pHeatingInfo_p->currentTimeMins = rtc_m.getMinute();
+    debugSerial_m.print("RTC day is ");
+    debugSerial_m.print(rtc_m.getWeekday() % 7, DEC);
+    debugSerial_m.print(", time is ");
+    debugSerial_m.print(rtc_m.getHour(), DEC);
+    
+    if (rtc_m.getMinute() < 10)
+    {
+        debugSerial_m.print(":0");
+    }
+    else
+    {
+        debugSerial_m.print(":");
+    }
+    
+    debugSerial_m.println(rtc_m.getMinute(), DEC);
+    
+    // FORLATER:
+    //pHeatingInfo_p->currentDay = rtc_m.getWeekday() % 7;  // Convert Sun=7,Mon=1,Sat=6 to Sun=0,Mon=1,Sat=6
+    //pHeatingInfo_p->currentTimeHours = rtc_m.getHour();
+    //pHeatingInfo_p->currentTimeMins = rtc_m.getMinute();
 }
 
 
@@ -533,6 +587,7 @@ bool sampleTemperature()
 void runAllUnitTests()
 {
     thermometer_m.runTests(&debugSerial_m);
+    boiler_m.runTests();
 }
 
 #endif 
@@ -546,23 +601,29 @@ void setup()
     debugSerial_m.println();
     debugSerial_m.println(vsProgmemBuffer_m); 
 
-#if UNIT_TEST
-    runAllUnitTests();
-#endif
-    
     wiflySerial_m.begin(9600);
     
     setPinMode(PC8, PIN_MODE_DIGITAL_WRITE);  // Set these as some of our library code 
     setPinMode(PC9, PIN_MODE_DIGITAL_WRITE);  // occasionally likes to flash them
     
     thermometer_m.init(TEMPERATURE_SENSOR_PIN);
-        
+    boiler_m.init(&debugSerial_m);
+
+
+#if UNIT_TEST
+    runAllUnitTests();
+#endif
+    
+    
     // FORLATER: setPinMode(ADVANCE_BUTTON_PIN, PIN_MODE_DIGITAL_READ);
     // FORLATER: setPinMode(ENCODER_BUTTON_PIN, PIN_MODE_DIGITAL_READ);
     //pinMode(BACK_BUTTON_PIN, INPUT);    
     setPinMode(HEATING_RELAY_PIN, PIN_MODE_DIGITAL_WRITE);
     setPinMode(WATER_RELAY_PIN, PIN_MODE_DIGITAL_WRITE);
     setPinMode(ACTIVE_INDICATOR_PIN, PIN_MODE_DIGITAL_WRITE);
+    
+    digitalWrite(HEATING_RELAY_PIN, LOW);
+    digitalWrite(WATER_RELAY_PIN, LOW);
     
     for (byte yGPIO = 0; yGPIO < NUM_GPIO_PINS; yGPIO++)
     {
@@ -580,9 +641,6 @@ void setup()
     digitalWrite(ACTIVE_INDICATOR_PIN, LOW);
     delay(500);
     
-    digitalWrite(HEATING_RELAY_PIN, LOW);
-    digitalWrite(WATER_RELAY_PIN, LOW);
-    
     heatingInfo_m.internetSyncEnabled = true;
     heatingInfo_m.maxTemp = 21;
     heatingInfo_m.currentTimeHours = 12;
@@ -594,17 +652,17 @@ void setup()
     
     for (int iDay = 0; iDay < DAYS_IN_A_WEEK; iDay++)
     {
-        heatingInfo_m.startWindows[iDay][0] = 60;
-        heatingInfo_m.endWindows[iDay][0] = 63;
+        heatingInfo_m.startWindows[iDay][0] = 63;
+        heatingInfo_m.endWindows[iDay][0] = 73;
         heatingInfo_m.startWindows[iDay][1] = 160;
-        heatingInfo_m.endWindows[iDay][1] = 170;        
+        heatingInfo_m.endWindows[iDay][1] = 190;        
     }
     
     // Different times for sat/sun   
-    heatingInfo_m.startWindows[0][0] = 80;
-    heatingInfo_m.endWindows[0][0] = 83;
+    heatingInfo_m.startWindows[0][0] = 83;
+    heatingInfo_m.endWindows[0][0] = 110;
     heatingInfo_m.startWindows[0][1] = 160;
-    heatingInfo_m.endWindows[0][1] = 163;
+    heatingInfo_m.endWindows[0][1] = 180;
     
     // These are just for easy testing...
     heatingInfo_m.startWindows[0][0] = 121; 
@@ -619,8 +677,8 @@ void setup()
     
     debug("Calling rtc init");
     
-    // FORLATER: rtc_m.init();
-    // FORLATER: updateRTCWithHeatingInfo(&heatingInfo_m);
+    rtc_m.init();  // MAYBEFORLATER
+    updateRTCWithHeatingInfo(&heatingInfo_m); // MAYBEFORLATER
     debug("Done with rtc init.");
       
     // FORLATER: initUI();    
@@ -911,6 +969,7 @@ void parseHeatingInfo(char *psHttpBody_p)
     if (heatingInfo_m.advanceStatus != newHeatingInfo.advanceStatus)
     {
         newHeatingInfo.lastAdvanceStatusChangeMillis = millis();
+        heatingInfo_m.lastAdvanceStatusChangeMillis = newHeatingInfo.lastAdvanceStatusChangeMillis;
     }
             
     // This was originally in twice.  No idea why.
@@ -927,7 +986,7 @@ void parseHeatingInfo(char *psHttpBody_p)
     heatingInfo_m.appliances = newHeatingInfo.appliances;
     heatingInfo_m.advanceStatus = newHeatingInfo.advanceStatus;
     
-    // FORLATER: updateRTCWithHeatingInfo(&heatingInfo_m);
+    updateRTCWithHeatingInfo(&heatingInfo_m);  // MAYBEFORLATER
     
     for (byte yGPIO = 0; yGPIO < NUM_GPIO_PINS; yGPIO++)
     {
@@ -1013,7 +1072,7 @@ void synchroniseWithInternet(bool bForceSynchronise_p)
             }   
             
             vsSendBuffer_m[iSendBufferPos++] = (char) heatingInfo_m.ambientTemp + 30;  // Add an offset to avoid accidentally null terminating the string if it's 0C
-            vsSendBuffer_m[iSendBufferPos++] = (isEnergised ? 'Y' : 'N');
+            vsSendBuffer_m[iSendBufferPos++] = (isEnergised_m ? 'Y' : 'N');
             vsSendBuffer_m[iSendBufferPos] = 0; // Null terminate
             
             // The data, once it's base64 encoded will be longer, around 70 bytes

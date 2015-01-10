@@ -6,11 +6,14 @@ HeatingESP8266::HeatingESP8266()
 {
 }
 
+
 void HeatingESP8266::begin(HardwareSerial* pESP8266Serial_p, HardwareSerial* pDebugger_p)
 {
     pDebugger_i = pDebugger_p;
     esp8266_i.init(pESP8266Serial_p, pDebugger_p);
 }
+
+
 
 int HeatingESP8266::sendHttpRequest(const char *psMessage_p, unsigned long lTimeoutMillis_p)
 {
@@ -35,7 +38,9 @@ int HeatingESP8266::sendHttpRequest(const char *psMessage_p, unsigned long lTime
         return ERROR_TIMED_OUT;
     }   
 
-    esp8266_i.closeServerConnection();
+    esp8266_i.closeServerConnection();       
+    
+    esp8266_i.disconnectFromAP();
     
     return SUCCESS;
 }
