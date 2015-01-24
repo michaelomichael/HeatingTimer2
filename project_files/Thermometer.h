@@ -45,6 +45,7 @@ public:
 #endif
     
 private:
+    static const int REAL_WORLD_DIFFERENTIAL_DEGREES = 2; // Add this to the value we get out of the thermistor
     static const int MAX_SAMPLES_TO_AVERAGE = 5;
     int viSamples_i[MAX_SAMPLES_TO_AVERAGE];
     int iNumSamplesTaken_i;

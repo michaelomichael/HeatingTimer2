@@ -1,26 +1,3 @@
-#if FALSE
-Not used at present
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #include "HeatingUI.h"
 #include "Encoder.h"
 #include "orz.h"
@@ -44,8 +21,10 @@ byte yPreviousUIState_m = UI_STATE_NORMAL;
 
 int iEncoderValue_m = 0;
 Encoder encoder_m(ENCODER_WHEEL_PIN_1, ENCODER_WHEEL_PIN_2);
-LiquidCrystal lcd_m(LCD_CONTROL_PIN_1, LCD_CONTROL_PIN_2, LCD_DATA_PIN_1, LCD_DATA_PIN_2, LCD_DATA_PIN_3, LCD_DATA_PIN_4);
-int iLcdBrightness_m = 126;  // was 40
+
+LiquidCrystal lcd_m(LCD_RS, LCD_ENABLE, LCD_DATA4, LCD_DATA5, LCD_DATA6, LCD_DATA7); //7, 6, 5, 4, 3, 2);
+
+int iLcdBrightness_m = 50;  // was 40
 
 
 
@@ -176,7 +155,7 @@ int getLcdBrightness()
 void setLcdBrightness(int iValue_p)
 {
     iLcdBrightness_m = iValue_p;
-    analogWrite(LCD_BACKLIGHT_PIN, iLcdBrightness_m);
+    analogWrite(LCD_VO, iLcdBrightness_m);  // TODO - this is contrast not brightness!
 }
 
 
@@ -726,35 +705,53 @@ int constrain(int iValue_p, int iMin_p, int iMax_p)
 void initUI()
 {
     debug("start of initUI()");
-    setPinMode(LCD_VSS_PIN, PIN_MODE_DIGITAL_WRITE);
-    setPinMode(LCD_VDD_PIN, PIN_MODE_DIGITAL_WRITE);
-    setPinMode(LCD_VO_PIN, PIN_MODE_DIGITAL_WRITE);
-    setPinMode(LCD_RW_PIN, PIN_MODE_DIGITAL_WRITE);
-    setPinMode(LCD_DATA_UNUSED_PIN_1, PIN_MODE_DIGITAL_WRITE);
-    setPinMode(LCD_DATA_UNUSED_PIN_2, PIN_MODE_DIGITAL_WRITE);
-    setPinMode(LCD_DATA_UNUSED_PIN_3, PIN_MODE_DIGITAL_WRITE);
-    setPinMode(LCD_DATA_UNUSED_PIN_4, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(ADVANCE_BUTTON_PIN, PIN_MODE_DIGITAL_READ);    
+    setPinMode(ENCODER_BUTTON_PIN, PIN_MODE_DIGITAL_READ);
+    
+    //pinMode(BACK_BUTTON_PIN, INPUT);    
 
-    digitalWrite(LCD_VSS_PIN, LOW);
-    digitalWrite(LCD_VDD_PIN, HIGH);
-    digitalWrite(LCD_VO_PIN, HIGH);
-    digitalWrite(LCD_RW_PIN, LOW);
-    digitalWrite(LCD_DATA_UNUSED_PIN_1, LOW);
-    digitalWrite(LCD_DATA_UNUSED_PIN_2, LOW);
-    digitalWrite(LCD_DATA_UNUSED_PIN_3, LOW);
-    digitalWrite(LCD_DATA_UNUSED_PIN_4, LOW);
+    
+    setPinMode(LCD_VSS, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(LCD_VDD, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(LCD_VO, PIN_MODE_ANALOG_WRITE);
+    setPinMode(LCD_RW, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(LCD_DATA0, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(LCD_DATA1, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(LCD_DATA2, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(LCD_DATA3, PIN_MODE_DIGITAL_WRITE);
+    //setPinMode(LCD_A, PIN_MODE_ANALOG_WRITE);  // Conflicts with AnalogRead on PC1 unforts
+    setPinMode(LCD_A, PIN_MODE_DIGITAL_WRITE);
+    setPinMode(LCD_K, PIN_MODE_DIGITAL_WRITE);
+    
+    digitalWrite(LCD_VSS, LOW);
+    digitalWrite(LCD_VDD, HIGH);
+    digitalWrite(LCD_RW, LOW);
+    digitalWrite(LCD_DATA0, LOW);
+    digitalWrite(LCD_DATA1, LOW);
+    digitalWrite(LCD_DATA2, LOW);
+    digitalWrite(LCD_DATA3, LOW);
+    //analogWrite(LCD_A, 10);
+    digitalWrite(LCD_A, HIGH);
+    digitalWrite(LCD_K, LOW);
+    
+    analogWrite(LCD_VO, iLcdBrightness_m); 
+
     
     lcd_m.begin(16, 2);
     lcd_m.clear();        
     //GET_PROGMEM_STRING(MSG_LCD_HELLO);  // lcd_m.print("Hello");
-    lcd_m.print("Hi!");                 
+    //lcd_m.print("Hi!");   
+        lcd_m.print(MSG_LCD_HELLO);
     debug("Ok, in middle of initUI()");
     
     encoder_m.write(0);
     //setPinMode(LCD_BACKLIGHT_PIN, PIN_MODE_DIGITAL_WRITE);
     //digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
-    setPinMode(LCD_BACKLIGHT_PIN, PIN_MODE_ANALOG_WRITE);
-    analogWrite(LCD_BACKLIGHT_PIN, iLcdBrightness_m);
+    //setPinMode(LCD_BACKLIGHT_PIN, PIN_MODE_ANALOG_WRITE);
+    //analogWrite(LCD_BACKLIGHT_PIN, iLcdBrightness_m);
+    
+    
+    
     delay(1000);
 }
 
@@ -1027,6 +1024,3 @@ void checkForUIIdle(HeatingInfo *pHeatingInfo_p)
         }
     }
 }
-
-
-#endif

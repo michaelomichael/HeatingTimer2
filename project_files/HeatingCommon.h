@@ -4,7 +4,8 @@
 #include "stm32f0xx.h"
 #include "orz.h"
 
-#define UNIT_TEST TRUE
+//#define UNIT_TEST TRUE
+#define USE_WIFI TRUE
 
 const int CR = 13;
 const int LF = 10;

@@ -17,12 +17,14 @@ an example here: http://www.embedds.com/stm32-interrupts-and-programming-with-gc
 #include "HardwareSerial.h"
 
 #include "HeatingCommon.h"
-// #include "HeatingUI.h"
+#include "HeatingUI.h"
 // #include "HeatingWifly.h"
 #include "HeatingESP8266.h"
 #include "RTC.h"
 #include "Thermometer.h"
 #include "BoilerController.h"
+
+#include "LCDTest.h" // temporary
 
 //#define debug(x) ;
 
@@ -67,28 +69,6 @@ CONNECTIONS
 
 */
 
-/*
-#include <WProgram.h>
-#include <NewSoftSerial.h>
-#include <Time.h>
-#include "HeatingCommon.h"
-#include "HeatingESP8266.h"
-#include "HeatingClock.h"
-#include "HeatingUI.h"
-*/
-
-
-
-
-
-//
-// Simple macro to copy the given string into a useable buffer called vsProgmemBuffer_m.
-// example use here:
-//
-//      GET_PROGMEM_STRING(THREE);
-//      realSerial.println(vsProgmemBuffer_m);
-//
-//#define GET_PROGMEM_STRING(sProgCharString) strcpy_P(vsProgmemBuffer_m, sProgCharString)
 
 //
 // How long to wait between calls onto the internal RTC to update 
@@ -127,6 +107,9 @@ const int GPIO_PINS[1] = { PB0 };
 // but PA5 seemed to be the only one that would actually work!
 //
 const int WIFLY_POWER_PIN = PA5;  
+
+
+const int DEBUG_SERIAL_GROUND_PIN = PA8;
 
 
 // HTTP Parsing states
@@ -484,7 +467,7 @@ void updateRelaysOld()
     
     if (isAdvanceStatusChanged)
     {
-        // FORLATER: updateDisplay(&heatingInfo_m, false);
+        updateDisplay(&heatingInfo_m, false);
     }
 }
 
@@ -518,7 +501,7 @@ void updateRelays()
     if (isAdvanceStatusChanged)
     {
         isHeatingInfoChangedLocally_m = true; // Notify the web server so it doesn't revert back to what's in the DB.            
-        // FORLATER: updateDisplay(&heatingInfo_m, false);
+        updateDisplay(&heatingInfo_m, false);
     }
 }
 
@@ -531,15 +514,18 @@ void updateRelays()
 
 void updateRTCWithHeatingInfo(HeatingInfo *pHeatingInfo_p)
 {
+#if USE_RTC
     debug("Updating RTC with heating info");
     rtc_m.setWeekday((Weekday) ((pHeatingInfo_p->currentDay + 7) % 8));  // Convert Sun=0,Mon=1,Sat=6 to Sun=7,Mon=1,Sat=6
     rtc_m.setTime(pHeatingInfo_p->currentTimeHours, pHeatingInfo_p->currentTimeMins);
+#endif
 }
 
 
 
 void updateHeatingInfoWithRTC(HeatingInfo *pHeatingInfo_p)
 {
+#if USE_RTC
     debug("Updating heating info with RTC data");
     debugSerial_m.print("RTC day is ");
     debugSerial_m.print(rtc_m.getWeekday() % 7, DEC);
@@ -561,6 +547,7 @@ void updateHeatingInfoWithRTC(HeatingInfo *pHeatingInfo_p)
     //pHeatingInfo_p->currentDay = rtc_m.getWeekday() % 7;  // Convert Sun=7,Mon=1,Sat=6 to Sun=0,Mon=1,Sat=6
     //pHeatingInfo_p->currentTimeHours = rtc_m.getHour();
     //pHeatingInfo_p->currentTimeMins = rtc_m.getMinute();
+#endif
 }
 
 
@@ -595,7 +582,10 @@ void runAllUnitTests()
 
 
 void setup()   
-{       
+{   
+    setPinMode(DEBUG_SERIAL_GROUND_PIN, PIN_MODE_DIGITAL_WRITE);
+    digitalWrite(DEBUG_SERIAL_GROUND_PIN, LOW);
+    
     debugSerial_m.begin(57600);//921600);
     GET_PROGMEM_STRING(MSG_SERIALDEBUG_INIT);  // debugSerial_m.println("Serial init..");        
     debugSerial_m.println();
@@ -606,18 +596,14 @@ void setup()
     setPinMode(PC8, PIN_MODE_DIGITAL_WRITE);  // Set these as some of our library code 
     setPinMode(PC9, PIN_MODE_DIGITAL_WRITE);  // occasionally likes to flash them
     
-    thermometer_m.init(TEMPERATURE_SENSOR_PIN);
+    thermometer_m.init(TEMPERATURE_SENSOR_PIN);    
     boiler_m.init(&debugSerial_m);
-
-
+   
 #if UNIT_TEST
     runAllUnitTests();
 #endif
     
     
-    // FORLATER: setPinMode(ADVANCE_BUTTON_PIN, PIN_MODE_DIGITAL_READ);
-    // FORLATER: setPinMode(ENCODER_BUTTON_PIN, PIN_MODE_DIGITAL_READ);
-    //pinMode(BACK_BUTTON_PIN, INPUT);    
     setPinMode(HEATING_RELAY_PIN, PIN_MODE_DIGITAL_WRITE);
     setPinMode(WATER_RELAY_PIN, PIN_MODE_DIGITAL_WRITE);
     setPinMode(ACTIVE_INDICATOR_PIN, PIN_MODE_DIGITAL_WRITE);
@@ -640,8 +626,12 @@ void setup()
     delay(500);
     digitalWrite(ACTIVE_INDICATOR_PIN, LOW);
     delay(500);
-    
+
+#if USE_WIFI    
     heatingInfo_m.internetSyncEnabled = true;
+#else
+    heatingInfo_m.internetSyncEnabled = false;
+#endif
     heatingInfo_m.maxTemp = 21;
     heatingInfo_m.currentTimeHours = 12;
     heatingInfo_m.appliances = APPLIANCES_HOT_WATER_AND_CENTRAL_HEATING;
@@ -658,6 +648,8 @@ void setup()
         heatingInfo_m.endWindows[iDay][1] = 190;        
     }
     
+    
+    
     // Different times for sat/sun   
     heatingInfo_m.startWindows[0][0] = 83;
     heatingInfo_m.endWindows[0][0] = 110;
@@ -673,23 +665,26 @@ void setup()
     heatingInfo_m.startWindows[1][0] = 80;
     heatingInfo_m.endWindows[1][0] = 83;
     heatingInfo_m.startWindows[1][1] = 160;
-    heatingInfo_m.endWindows[1][1] = 163;        
-    
+    heatingInfo_m.endWindows[1][1] = 163;            
+
+#if USE_RTC
     debug("Calling rtc init");
-    
     rtc_m.init();  // MAYBEFORLATER
     updateRTCWithHeatingInfo(&heatingInfo_m); // MAYBEFORLATER
     debug("Done with rtc init.");
+#endif
       
-    // FORLATER: initUI();    
-        
-    // FORLATER: updateDisplay(&heatingInfo_m, false);    
+    initUI();    
+    
+    updateDisplay(&heatingInfo_m, false);    
         
     wifly_m.begin(&wiflySerial_m, &debugSerial_m);    
 
     synchroniseWithInternet(true);
 
-    debug("Setup complete.");       
+    debug("Setup complete.");  
+
+    
 }
 
 
@@ -697,8 +692,8 @@ void setup()
 
 void loop()                     
 {    
-    // FORLATER: if ((! isUIBusy())   &&  millisSince(lLastTimeCheckTime_m) > RTC_UPDATE_TIME_MILLIS)
-    if (millisSince(lLastTimeCheckTime_m) > RTC_UPDATE_TIME_MILLIS)
+    if ((! isUIBusy())   &&  millisSince(lLastTimeCheckTime_m) > RTC_UPDATE_TIME_MILLIS)
+    //if (millisSince(lLastTimeCheckTime_m) > RTC_UPDATE_TIME_MILLIS)
     {
         debugSerial_m.println("loop: Incrementing time");
         lLastTimeCheckTime_m = millis();
@@ -715,11 +710,11 @@ void loop()
         if (isTimeChanged)
         {
             updateRelays();
-            // FORLATER: updateDisplay(&heatingInfo_m, false);
+            updateDisplay(&heatingInfo_m, false);
         }
     }   
     
-    // FORLATER: checkForAdvanceAndEncoderInputs(&heatingInfo_m);
+    checkForAdvanceAndEncoderInputs(&heatingInfo_m);
     
     
     /*
@@ -743,16 +738,16 @@ void loop()
         bool isTemperatureChanged = sampleTemperature();
         if (isTemperatureChanged)
         {            
-            // FORLATER: updateDisplay(&heatingInfo_m, false);
+            updateDisplay(&heatingInfo_m, false);
             updateRelays();
         }
     }
     
     
-    // FORLATER: checkForUIIdle(&heatingInfo_m);
+    checkForUIIdle(&heatingInfo_m);
     
     
-    // FORLATER: if (! isUIBusy())
+    if (! isUIBusy())
     {
         if (heatingInfo_m.internetSyncEnabled  &&  millisSince(lLastSynchroniseSendTime_m) > lMaxInternetSyncDelayMillis_m)
         {            
@@ -1023,8 +1018,9 @@ void parseHeatingInfo(char *psHttpBody_p)
 //
 void synchroniseWithInternet(bool bForceSynchronise_p)
 {   
+#if USE_WIFI
     debug("synchroniseWithInternet: start");
-    // FORLATER: setUIState(&heatingInfo_m, UI_STATE_SYNCHRONISING, false);    
+    setUIState(&heatingInfo_m, UI_STATE_SYNCHRONISING, false);    
     
     
     debug("synchroniseWithInternet:1");
@@ -1107,7 +1103,7 @@ void synchroniseWithInternet(bool bForceSynchronise_p)
             lLastSynchroniseSuccessTime_m = millis();
             iNumFailedInternetSyncs_m = 0;
             isStillTryingToSynchronise = false;  // So we can break out of the loop
-            // FORLATER: setUIState(&heatingInfo_m, UI_STATE_SYNCHRONISATION_COMPLETE, false);
+            setUIState(&heatingInfo_m, UI_STATE_SYNCHRONISATION_COMPLETE, false);
         }
         else
         {
@@ -1115,7 +1111,7 @@ void synchroniseWithInternet(bool bForceSynchronise_p)
                    
             if (iNumFailedInternetSyncs_m >= MAX_FAILED_INTERNET_SYNCHRONISATIONS_BEFORE_HARD_RESET)
             {
-                // FORLATER: setUIState(&heatingInfo_m, UI_STATE_HARD_REBOOTING_WIFLY, false);
+                setUIState(&heatingInfo_m, UI_STATE_HARD_REBOOTING_WIFLY, false);
                 //iNumFailedInternetSyncs_m = 0;
                 //isAtLeastOneSuccessfulInternetSync_m = false;  // hopefully it'll get set to 'true' soon!
                 wifly_m.hardReset();
@@ -1123,14 +1119,14 @@ void synchroniseWithInternet(bool bForceSynchronise_p)
             }
             else if (iNumFailedInternetSyncs_m >= MAX_FAILED_INTERNET_SYNCHRONISATIONS_BEFORE_SOFT_RESET)
             {
-                // FORLATER: setUIState(&heatingInfo_m, UI_STATE_SOFT_REBOOTING_WIFLY, false);
+                setUIState(&heatingInfo_m, UI_STATE_SOFT_REBOOTING_WIFLY, false);
                 //iNumFailedInternetSyncs_m = 0;
                 //isAtLeastOneSuccessfulInternetSync_m = false;  // hopefully it'll get set to 'true' soon!
                 wifly_m.softReset();
             }
             else
             {
-                // FORLATER: setUIState(&heatingInfo_m, UI_STATE_SYNCHRONISATION_FAILED, false);
+                setUIState(&heatingInfo_m, UI_STATE_SYNCHRONISATION_FAILED, false);
             }
         }
         
@@ -1138,11 +1134,12 @@ void synchroniseWithInternet(bool bForceSynchronise_p)
         
         lLastSynchroniseSendTime_m = millis(); 
             
-        // FORLATER: setUIState(&heatingInfo_m, UI_STATE_NORMAL, false);
+        setUIState(&heatingInfo_m, UI_STATE_NORMAL, false);
         updateRelays();
         
         debug("synchroniseWithInternet: end");
     }
+#endif
 }
 
 

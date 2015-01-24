@@ -745,6 +745,16 @@
               <FileType>5</FileType>
               <FilePath>.\project_files\BoilerController.h</FilePath>
             </File>
+            <File>
+              <FileName>LCDTest.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\LCDTest.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>LCDTest.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\project_files\LCDTest.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

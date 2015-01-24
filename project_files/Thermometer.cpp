@@ -125,7 +125,7 @@ int Thermometer::convertVoltageToTemperature(int iADCReading_p)
             //  If iLastIndex=0 then we want to return -30.
             //  If it's 30 then we want to return 0.
             //
-            return iLastIndex + MIN_RECORDABLE_TEMPERATURE;
+            return iLastIndex + MIN_RECORDABLE_TEMPERATURE + REAL_WORLD_DIFFERENTIAL_DEGREES;
         }
     }
         

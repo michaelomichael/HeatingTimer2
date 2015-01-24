@@ -1,36 +1,6 @@
 #ifndef HeatingUI_h
 #define HeatingUI_h
 
-#if FALSE
-
-Not used at present
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #include <LiquidCrystal.h>
 #include <Encoder.h>
@@ -43,32 +13,25 @@ const int ENCODER_WHEEL_PIN_1 = PA0; // TODO
 const int ENCODER_WHEEL_PIN_2 = PA1; // TODO
 const int ENCODER_BUTTON_PIN = PA7; // TODO
 //const int BACK_BUTTON_PIN = 99;
-const int ADVANCE_BUTTON_PIN = PC4; // Note: I tried PF0 and PF1 but they don't work for reading!!
+const int ADVANCE_BUTTON_PIN = PB11; // Note: I tried PF0 and PF1 but they don't work for reading!!
 
-const int LCD_VSS_PIN = PF4;  // Connect to LCD pin 1
-const int LCD_VDD_PIN = PF5;  // Connect to LCD pin 2 
-const int LCD_VO_PIN = PA4;   // Connect to LCD pin 3
-const int LCD_RS_PIN = PA5;   // Connect to LCD pin 4
-const int LCD_RW_PIN = PA6;   // Connect to LCD pin 5
-const int LCD_E_PIN = PA7;    // Connect to LCD pin 6
-const int LCD_DATA_UNUSED_PIN_1 = PC4;  // Connect to LCD pin 7
-const int LCD_DATA_UNUSED_PIN_2 = PC5;  // Connect to LCD pin 8
-const int LCD_DATA_UNUSED_PIN_3 = PB0;  // Connect to LCD pin 9
-const int LCD_DATA_UNUSED_PIN_4 = PB1;  // Connect to LCD pin 10
-const int LCD_DATA_PIN_1 = PB2;  // Connect to LCD pin 11
-const int LCD_DATA_PIN_2 = PB10;  // Connect to LCD pin 12
-const int LCD_DATA_PIN_3 = PB11; // Connect to LCD pin 13
-const int LCD_DATA_PIN_4 = PB12; // Connect to LCD pin 14
-//
-//  We use PWM to control the brightness of the LCD backlight.
-//  Pin PA11 seems to be about the only one that will work for analog;
-//  PB12 seems like the obvious choice but it only works for digital
-//  output.
-//
-const int LCD_BACKLIGHT_PIN = PA11; // Connect to LCD pin 15
 
-const int LCD_CONTROL_PIN_1 = LCD_RS_PIN; 
-const int LCD_CONTROL_PIN_2 = LCD_E_PIN;
+const int LCD_VSS = PC6; /* Avoid PC8 and PC9 (builtin LEDs) and PA8-10 (useful for USART) */
+const int LCD_VDD = PC7; /* Not used: you need +5V from the corner pin */
+const int LCD_VO = PA11;
+const int LCD_RS = PA12;
+const int LCD_RW = PF6;  /* Avoid PA13 or you'll brick it! */
+const int LCD_ENABLE = PF7;
+const int LCD_DATA0 = PA14;
+const int LCD_DATA1 = PA15;
+const int LCD_DATA2 = PC10;
+const int LCD_DATA3 = PC11;
+const int LCD_DATA4 = PC12;
+const int LCD_DATA5 = PD2;
+const int LCD_DATA6 = PB3;
+const int LCD_DATA7 = PB4;
+const int LCD_A = PB5;  /* PWM */
+const int LCD_K = PB6;
 
 
 
@@ -126,5 +89,4 @@ void checkForUIIdle(HeatingInfo *pHeatingInfo_p);
 //const char* getLongDayName(byte yDayIndex_p);
 
 
-#endif
 #endif
