@@ -1,0 +1,38 @@
+Pins and connections:
+
+LCD, incl wires for +5v and Gnd on LHS, and resistor from +3V to LEDA
+
+Status LED, incl resistor between gnd and (change to this: PC0)
+
+Crystal between PC14 and PC15
+Cap between PC14 and Gnd
+Cap between PC15 and Gnd
+
+Advance Switch between Gnd and (change to this:) PB1
+
+Thermistor leg 1 to PC1
+Thermistor leg 1 to 22k resistor then that resistor to +3v
+Thermistor leg 2 to Gnd
+
+Boiler connector:
+1   +5V
+2   Sw2 -> PC3  (but could be anything really)
+3   Sw3 -> PC2  (but could be anything really)
+4   Gnd
+
+
+ESP8266:
+Yellow -> PA2  (actually red)
+Green -> PA3   (actually black)
+Red -> +3v
+Black -> Gnd
+
+Encoder switch:
+Gnd and PB14
+
+Encoder knob:
+Left: PA0
+Middle: Gnd
+Right: PA1
+
+

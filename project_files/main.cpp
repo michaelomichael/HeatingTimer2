@@ -87,7 +87,7 @@ const int HEATING_RELAY_PIN = PC3; // was 8;
 // to indicate whether either (or both) of the relays 
 // is currently active.
 //
-const int ACTIVE_INDICATOR_PIN = PC5;
+const int ACTIVE_INDICATOR_PIN = PC0; //PC5;
 
 //
 // Connected to a thermistor.  This needs to be on PC1 for ADC to work PD2.
@@ -587,6 +587,7 @@ void setup()
     digitalWrite(DEBUG_SERIAL_GROUND_PIN, LOW);
     
     debugSerial_m.begin(57600);//921600);
+    debugSerial_m.println("Oof");
     GET_PROGMEM_STRING(MSG_SERIALDEBUG_INIT);  // debugSerial_m.println("Serial init..");        
     debugSerial_m.println();
     debugSerial_m.println(vsProgmemBuffer_m); 

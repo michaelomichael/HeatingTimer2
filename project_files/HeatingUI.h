@@ -11,9 +11,9 @@
 // Input/Output pins
 const int ENCODER_WHEEL_PIN_1 = PA0; // TODO
 const int ENCODER_WHEEL_PIN_2 = PA1; // TODO
-const int ENCODER_BUTTON_PIN = PA7; // TODO
+const int ENCODER_BUTTON_PIN = PB14; //PA7; // TODO
 //const int BACK_BUTTON_PIN = 99;
-const int ADVANCE_BUTTON_PIN = PB11; // Note: I tried PF0 and PF1 but they don't work for reading!!
+const int ADVANCE_BUTTON_PIN = PB1; //PB11; // Note: I tried PF0 and PF1 but they don't work for reading!!
 
 
 const int LCD_VSS = PC6; /* Avoid PC8 and PC9 (builtin LEDs) and PA8-10 (useful for USART) */
